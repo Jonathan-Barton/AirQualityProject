@@ -1,5 +1,5 @@
 ### reading data in
-"""
+
 import pandas as pd
 
 url = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
@@ -8,28 +8,39 @@ df = pd.read_csv(url)
 pd.set_option('display.float_format', lambda x: '%.3f' % x)
 #this just turns off an error I kept getting... hahaha
 pd.options.mode.chained_assignment = None  # default='warn'
-df.head()
 
-### initialize dict to store data
-USADict = {}
-countyData = {}
+df = df
+df = df.reset_index()
+del df['index']
 
-### pulled state list to get all state names 
-states = pd.read_csv('https://raw.githubusercontent.com/jasonong/List-of-US-States/master/states.csv')
-states = states['State'].to_list()
+df['date'] = pd.to_datetime(df['date'])
+df = df.loc[(df['date'] >= '2020-04-30') & (df['date'] <= '2020-12-31')]
 
-for state in states: 
-    stateData = df.loc[df['state'] == state]
-    countyList = stateData.county.unique()
-    groupedStateData = stateData.groupby(stateData.county)
-    
-    ### build a dictionary for county to data 
-    for county in countyList:
-        countyData[county] = groupedStateData.get_group(county)
-    print(countyData)
-    ### Key = state value = dictionary{county:data}
-    USADict[state] = countyData
-print(USADict)
+df['daily cases'] = df['cases'].diff()
+df['daily deaths'] = df['deaths'].diff()
+
+
+def createData(dataset):
+    ### initialize dict to store data
+    USADict = {}
+    countyData = {}
+
+    ### pulled state list to get all state names 
+    states = pd.read_csv('https://raw.githubusercontent.com/jasonong/List-of-US-States/master/states.csv')
+    states = states['State'].to_list()
+
+    for state in states: 
+        stateData = df.loc[df['state'] == state]
+        countyList = stateData.county.unique()
+        groupedStateData = stateData.groupby(stateData.county)
+        
+        ### build a dictionary for county to data 
+        for county in countyList:
+            countyData[county] = groupedStateData.get_group(county)
+        ### Key = state value = dictionary{county:data}
+        USADict[state] = countyData
+    return(USADict)
+dataset = createData(df)
 """
 import pandas as pd
 
@@ -43,3 +54,5 @@ datasetGroup = df.groupby(df.Location)
 UtUt = datasetGroup.get_group('Utah, Utah')
 
 print(UtUt)
+"""
+print(dataset['Utah']['Tooele'])
